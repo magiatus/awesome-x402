@@ -29,6 +29,8 @@
 - [🚀 Migration Guides](#-migration-guides)
 - [🔒 Security & Audits](#-security--audits)
 - [🔗 Related Protocols](#-related-protocols)
+- [❓ FAQ](#-faq)
+- [📖 Glossary](#-glossary)
 - [🤝 Contributing](#-contributing)
 - [Awesome Lists](#awesome-lists)
 
@@ -922,6 +924,69 @@ Adjacent protocols and standards.
 
 - 21.co Micropayments - Early Bitcoin micropayment attempt (2015).
 - [HTTP 402 Proposal](https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html) - Original RFC (1999).
+
+## ❓ FAQ
+
+Common questions from developers and agent builders getting started with x402.
+
+### What is x402?
+
+x402 is an open payment protocol that uses the HTTP `402 Payment Required` status code to settle payments directly over HTTP. A server responds with `402` plus payment details, the client pays (typically in USDC), and the request is retried with proof of payment — no accounts, API keys, or manual checkout required.
+
+### Why use the 402 status code?
+
+`402 Payment Required` was reserved in the original HTTP spec (1999) but never standardized. x402 finally gives it a concrete, interoperable meaning so that "pay to access" becomes a native part of the web request/response cycle.
+
+### Do I need crypto experience to use x402?
+
+No. Most SDKs and middleware abstract the wallet and signing logic away. As a seller you wrap an endpoint with middleware; as a buyer (or AI agent) you fund a wallet once and the client library handles signing and retries automatically.
+
+### How fast are payments and what does it cost?
+
+Settlement on Base typically completes in ~2 seconds. The protocol itself charges no fees — you only pay normal network gas, and facilitators may sponsor or batch that for you. Per-call prices are set by each API provider (commonly $0.001–$0.50 USDC).
+
+### What is a facilitator?
+
+A facilitator is an optional service that verifies and settles payments on-chain on behalf of a seller, so the seller doesn't have to run blockchain infrastructure. See [Facilitators](#-facilitators).
+
+### Which chains and tokens are supported?
+
+USDC on Base is the most common pairing today, but x402 is chain- and token-agnostic by design. Support for additional EVM chains and stablecoins is expanding across implementations — check each SDK or facilitator for its current coverage.
+
+### How is x402 different from Lightning or traditional payment APIs?
+
+Unlike account-based APIs (Stripe-style keys and invoices), x402 settles per request with no signup, and unlike Lightning it builds on existing HTTP semantics and EVM stablecoins. See [Related Protocols](#-related-protocols) for a broader comparison.
+
+### Can AI agents pay autonomously?
+
+Yes — autonomous agent payments are a primary use case. Agents fund a wallet and pay per request without human approval, which is why x402 pairs naturally with the [Model Context Protocol (MCP)](#-ai-agent-integration).
+
+### Is x402 secure?
+
+Payments use signed, single-use authorizations (EIP-3009 `TransferWithAuthorization`) so credentials are never shared and signatures can't be replayed. Always review the [Security & Audits](#-security--audits) section and validate amounts before signing.
+
+### How do I get started?
+
+Pick your language in [SDKs & Client Libraries](#-sdks--client-libraries), wrap an endpoint using a [Server Framework or Middleware](#-server-frameworks--middleware), and copy a working [Example Application](#-example-applications). The [5-Minute Quickstart](https://docs.cdp.coinbase.com/x402/quickstart-for-sellers) walks through accepting your first payment.
+
+## 📖 Glossary
+
+Key terms used across the x402 ecosystem.
+
+- **x402** - Open protocol for settling payments over HTTP using the `402 Payment Required` status code.
+- **402 Payment Required** - HTTP status code, reserved since 1999, that x402 uses to signal a request needs payment before it can be fulfilled.
+- **Facilitator** - Service that verifies and settles x402 payments on-chain on a seller's behalf, removing the need to run blockchain infrastructure.
+- **Settlement** - The on-chain confirmation of a payment; on Base this typically finalizes in ~2 seconds.
+- **USDC** - Regulated US-dollar stablecoin, the most commonly used currency for x402 payments.
+- **Base** - Coinbase's Ethereum Layer 2 network, the most common settlement chain for x402 today.
+- **EIP-3009** - Ethereum standard for `TransferWithAuthorization`, enabling gasless, signature-based token transfers used by x402 payment authorizations.
+- **TransferWithAuthorization** - Signed, single-use payment authorization that lets a buyer pay without exposing keys or risking signature replay.
+- **Payment Required Response** - The `402` HTTP response that carries payment details (amount, asset, recipient, network) the client needs to pay and retry.
+- **Buyer / Client** - The party (a user or AI agent) that pays to access a resource, usually via an SDK that signs and retries automatically.
+- **Seller / Server** - The party that gates a resource behind payment, typically using x402 middleware.
+- **MCP (Model Context Protocol)** - Open standard for connecting AI agents to tools and data; commonly paired with x402 so agents can pay autonomously.
+- **Gasless Payment** - A transfer where the buyer doesn't pay network gas directly because it's sponsored or batched by a facilitator.
+- **Micropayment** - A very small payment (often a fraction of a cent to a few cents) made viable by x402's low fees and fast settlement.
 
 ## 🤝 Contributing
 

@@ -31,6 +31,7 @@
 - [🔗 Related Protocols](#-related-protocols)
 - [❓ FAQ](#-faq)
 - [📖 Glossary](#-glossary)
+- [🩺 Troubleshooting](#-troubleshooting)
 - [🤝 Contributing](#-contributing)
 - [Awesome Lists](#awesome-lists)
 
@@ -987,6 +988,57 @@ Key terms used across the x402 ecosystem.
 - **MCP (Model Context Protocol)** - Open standard for connecting AI agents to tools and data; commonly paired with x402 so agents can pay autonomously.
 - **Gasless Payment** - A transfer where the buyer doesn't pay network gas directly because it's sponsored or batched by a facilitator.
 - **Micropayment** - A very small payment (often a fraction of a cent to a few cents) made viable by x402's low fees and fast settlement.
+
+## 🩺 Troubleshooting
+
+Common errors when integrating x402 and how to resolve them.
+
+### The client loops on `402 Payment Required`
+
+The request keeps coming back as `402` instead of succeeding. Usual causes:
+
+- The client isn't attaching the payment proof on the retry — make sure you use an x402-aware client/SDK that reads the `402` challenge and re-sends with the payment header.
+- The amount or asset paid doesn't match what the server demanded. Compare the paid value, token address, and recipient against the `402` response details exactly.
+- A proxy or CDN is stripping the payment header. Verify the header survives end-to-end.
+
+### `Invalid signature` / authorization rejected
+
+The `TransferWithAuthorization` (EIP-3009) signature failed verification.
+
+- Wrong **chainId** or token contract address in the signed payload — the signature is bound to both. Confirm you're signing for the same network (e.g. Base) the server settles on.
+- Signing with the wrong account, or a mismatch between the `from` address and the signer.
+- Malformed EIP-712 domain (name/version/verifyingContract). Use the values published by the token, not hand-rolled ones.
+
+### `Authorization expired` / `not yet valid`
+
+EIP-3009 authorizations carry `validAfter` / `validBefore` time bounds.
+
+- Client clock skew — sync the system clock; a fast/slow clock pushes you outside the window.
+- `validBefore` set too tight. Give a reasonable validity window so the payment can be submitted and mined.
+
+### `Nonce already used` / replay rejected
+
+Each `TransferWithAuthorization` nonce is single-use by design.
+
+- Generate a fresh random nonce per payment; never reuse one.
+- If you retried a request, reuse the **same already-signed** authorization rather than signing a new one for the same logical payment, to avoid double-charging.
+
+### `Insufficient balance` / `transfer amount exceeds balance`
+
+- The buyer wallet doesn't hold enough USDC on the settlement chain (note: Base USDC, not mainnet or a bridged variant).
+- Funds are on the wrong network. Bridge or fund the wallet on the chain the facilitator uses.
+
+### Settlement succeeds on-chain but the API still denies access
+
+- The server/facilitator hasn't observed the transaction yet — allow for the (~2s) settlement and verification window before retrying.
+- You paid a different facilitator/recipient than the one the server checks. Pay exactly the recipient from the `402` challenge.
+
+### Gas or `out of funds for gas` errors
+
+- With a facilitator that sponsors gas, the buyer only needs USDC — confirm gasless settlement is actually enabled for your route.
+- Self-settling? The submitting account also needs the chain's native gas token.
+
+> Still stuck? Check the [Security & Audits](#-security--audits) section, your SDK's docs in [SDKs & Client Libraries](#-sdks--client-libraries), or open an issue with the full `402` response and your (redacted) payment payload.
 
 ## 🤝 Contributing
 
